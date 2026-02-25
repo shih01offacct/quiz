@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>霧峰區公所 - 檔案應用-有獎徵答</title>
+    <title>霧峰區公所 - 檔案應用有獎徵答</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -18,21 +18,39 @@
         }
         #game-container {
             background-color: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
             max-width: 400px;
             width: 100%;
             text-align: center;
+            position: relative;
+            overflow: hidden;
         }
-        h2 { color: #0056b3; margin-top: 0; }
-        #question-text {
-            font-size: 22px;
+        
+        /* 標題與文字樣式 */
+        h1 { color: #0056b3; font-size: 26px; margin-bottom: 10px; }
+        h2 { color: #0056b3; margin-top: 0; font-size: 22px;}
+        p { color: #555; font-size: 16px; line-height: 1.6; }
+
+        /* 按鈕樣式 */
+        .primary-btn {
+            background-color: #0056b3;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 20px;
             font-weight: bold;
-            color: #333;
-            margin-bottom: 20px;
-            line-height: 1.4;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 80%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.2s, background-color 0.2s;
         }
+        .primary-btn:active { transform: scale(0.95); background-color: #004494; }
+
+        /* 選項按鈕樣式 */
         .option-btn {
             display: block;
             width: 100%;
@@ -40,64 +58,98 @@
             margin: 12px 0;
             background-color: #e9ecef;
             border: 2px solid #dee2e6;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 18px;
             font-weight: bold;
             color: #333;
             cursor: pointer;
             transition: 0.2s;
         }
-        .option-btn:active { background-color: #0056b3; color: white; }
-        .result-screen { display: none; }
+        .option-btn:active { background-color: #0056b3; color: white; border-color: #0056b3; }
+
+        /* 題目文字 */
+        #question-text {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.4;
+            min-height: 60px; /* 避免題目長度不同造成跳動 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 控制畫面顯示與隱藏 */
+        .screen { display: none; }
+        .active { display: block; animation: fadeIn 0.5s; }
+
+        /* 結果畫面文字 */
         .success-text { color: #28a745; font-size: 28px; font-weight: bold; margin-bottom: 15px;}
         .fail-text { color: #dc3545; font-size: 28px; font-weight: bold; margin-bottom: 15px;}
-        .action-btn {
-            background-color: #0056b3; color: white; padding: 12px 25px;
-            border: none; border-radius: 8px; font-size: 18px; font-weight: bold;
-            cursor: pointer; margin-top: 15px; width: 100%;
+
+        /* 動畫效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="question-screen">
-        <h2>📂 檔案應用-有獎徵答</h2>
-        <div id="question-text">載入中...</div>
+    
+    <div id="home-screen" class="screen active">
+        <h1>📂 霧峰區公所<br>檔案應用有獎徵答</h1>
+        <div style="font-size: 60px; margin: 20px 0;">🏫</div>
+        <p>準備好接受挑戰了嗎？</p>
+        <p style="font-size: 14px; color: #666;">隨機抽出 1 題，答對即可獲獎！</p>
+        <button class="primary-btn" onclick="goToGame()">🚀 開始挑戰</button>
+    </div>
+
+    <div id="question-screen" class="screen">
+        <h2>❓ 請回答下列問題</h2>
+        <div id="question-text">題目載入中...</div>
         <div id="options-container"></div>
     </div>
 
-    <div id="success-screen" class="result-screen">
-        <div class="success-text">🎉 恭喜答對！</div>
-        <p style="font-size: 18px; line-height: 1.5;">太厲害了！完全了解檔案應用規定。<br><br>👉 <b>請將此畫面交給工作人員</b><br>即可兌換精美小禮物！</p>
+    <div id="success-screen" class="screen">
+        <div style="font-size: 60px; margin-bottom: 10px;">🎉</div>
+        <div class="success-text">恭喜答對！</div>
+        <p style="font-size: 18px; font-weight: bold;">太厲害了！<br>完全了解檔案應用規定。</p>
+        <div style="background-color: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin-top: 20px;">
+            👉 <b>請出示此畫面給工作人員</b><br>即可兌換精美小禮物！
+        </div>
     </div>
 
-    <div id="fail-screen" class="result-screen">
-        <div class="fail-text">❌ 哎呀，答錯了！</div>
-        <p style="font-size: 18px;">沒關係，要不要再挑戰一次別的題目？</p>
-        <button class="action-btn" onclick="startGame()">↻ 再抽一題</button>
+    <div id="fail-screen" class="screen">
+        <div style="font-size: 60px; margin-bottom: 10px;">❌</div>
+        <div class="fail-text">哎呀，答錯了！</div>
+        <p style="font-size: 18px;">沒關係，規定細節很多。<br>要不要再試一次？</p>
+        <button class="primary-btn" onclick="retryGame()">↻ 再抽一題</button>
     </div>
+
 </div>
 
 <script>
-    // 題庫已依照您提供的 Word 檔全面更新
+    // 題庫 (已包含您修正的遞送方式正確答案)
     const questions = [
-        { q: "想向機關申請閱覽檔案，<br>該怎麼做？", options: ["偷偷溜進去看", "填寫申請書向機關申請", "打電話向機關申請"], ans: 1 },
+        { q: "想向機關申請閱覽檔案，<br>該怎麼做？", options: ["偷偷溜進去看", "填寫檔案應用申請書向機關申請", "打電話向機關申請"], ans: 1 },
         { q: "下列何者是霧峰區公所的<br>檔案應用開放時間？", options: ["星期一至星期五", "國定假日", "例假日"], ans: 0 },
         { q: "申請閱覽檔案時，應攜帶<br>哪種證件以備核對？", options: ["悠遊卡", "身分證或具照片之證明文件", "借書證"], ans: 1 },
         { q: "申請閱覽檔案，可以當天<br>申請後立刻閱覽嗎？", options: ["可以立刻閱覽", "要先提出申請並經審核通過", "要先透過電話預約"], ans: 1 },
         { q: "閱覽檔案時，<br>下列哪種行為是被允許的？", options: ["用筆在檔案上做記號", "拆散檔案卷夾", "查看檔案內容"], ans: 2 },
-        { q: "檔案閱覽完畢後，<br>應該如何處理？", options: ["隨手放在桌上就好", "交還給檔案管理人員點收", "自己帶回家保存"], ans: 1 },
+        { q: "檔案閱覽完畢後，<br>應該如何處理？", options: ["隨手放在桌上就好", "交還給檔案管理人員", "自己帶回家保存"], ans: 1 },
         { q: "民眾申請檔案應用，機關最晚<br>應於受理後幾日內通知？", options: ["30日", "60日", "90日"], ans: 0 },
         { q: "閱覽檔案時，是否可以攜帶<br>食物或飲料進入閱覽場所？", options: ["可以", "不可以", "只要不打開就可以攜帶入內"], ans: 1 },
-        { q: "如果不方便親自到場閱覽，<br>可以委託他人嗎？", options: ["不可以", "可以，但需要填寫委託書", "可以，出示委託人的身分證即可"], ans: 1 },
-        { q: "檔案法所稱的「檔案」，<br>是指下列哪一種資料？", options: ["民眾私下的筆記", "機關收發、保存之資料", "報章雜誌"], ans: 1 },
+        { q: "如果不方便親自到場閱覽，<br>可以委託他人嗎？", options: ["不可以", "可以，但需要填寫委託書", "可以，出示委託人身分證即可"], ans: 1 },
+        { q: "檔案法所稱的「檔案」，<br>是指下列哪一種？", options: ["民眾私下的筆記", "機關收發、保存之資料", "報章雜誌"], ans: 1 },
         { q: "複製檔案以黑白複印，<br>B4(含)尺寸以下每張幾元？", options: ["10元", "5元", "2元"], ans: 2 },
-        { q: "「機關檔案目錄查詢網」的<br>英文名稱縮寫為何?", options: ["NASA", "NEAR", "NVIDIA"], ans: 1 },
+        { q: "「機關檔案目錄查詢網」的<br>英文名稱縮寫為何?", options: ["NASA", "NEAR", "GOOGLE"], ans: 1 },
         { q: "閱覽、抄錄檔案，<br>其收費標準為何？", options: ["免費", "每 2 小時 20 元", "一次 100 元"], ans: 1 },
         { q: "複製檔案以黑白複印，<br>A3尺寸每張幾元？", options: ["10元", "5元", "3元"], ans: 2 },
         { q: "檔案應用之方式，<br>不包括下列何者？", options: ["閱覽", "抄錄", "借出原件回家"], ans: 2 },
-        { q: "使用機關檔案目錄查詢網「NEAR」，<br>主要是要查詢什麼資訊？", options: ["機關檔案的內容", "機關檔案目錄", "檔案承辦人的姓名"], ans: 1 },
+        { q: "透過「NEAR」查詢檔案時，<br>主要是查詢什麼資訊？", options: ["檔案的內容", "檔案目錄", "檔案承辦人的姓名"], ans: 1 },
         { q: "遞送「檔案應用申請書」時，<br>可以透過下列哪種方式？", options: ["親自到現場送件", "透過郵寄方式送件", "以上皆是"], ans: 2 },
         { q: "各機關之檔案應用收費標準，<br>是依據哪個機關所訂定？", options: ["行政院", "檔案管理局", "國史館"], ans: 1 },
         { q: "機關通知須「補正」資料，<br>應於收到通知起幾日內補正？", options: ["7 日內", "14 日內", "30 日內"], ans: 0 },
@@ -106,16 +158,36 @@
 
     let currentQuestion = {};
 
-    function startGame() {
-        document.getElementById('success-screen').style.display = 'none';
-        document.getElementById('fail-screen').style.display = 'none';
-        document.getElementById('question-screen').style.display = 'block';
+    // 切換頁面的功能
+    function showScreen(screenId) {
+        // 先隱藏所有頁面
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        // 顯示指定的頁面
+        document.getElementById(screenId).classList.add('active');
+    }
 
+    // 按下「開始挑戰」
+    function goToGame() {
+        startGame();
+        showScreen('question-screen');
+    }
+
+    // 按下「再抽一題」
+    function retryGame() {
+        startGame();
+        showScreen('question-screen');
+    }
+
+    // 遊戲邏輯
+    function startGame() {
+        // 隨機抽題
         let randomIndex = Math.floor(Math.random() * questions.length);
         currentQuestion = questions[randomIndex];
 
+        // 顯示題目
         document.getElementById('question-text').innerHTML = currentQuestion.q;
         
+        // 顯示選項
         const optionsContainer = document.getElementById('options-container');
         optionsContainer.innerHTML = ''; 
         
@@ -128,20 +200,15 @@
         });
     }
 
+    // 檢查答案
     function checkAnswer(selectedIndex) {
-        document.getElementById('question-screen').style.display = 'none';
         if (selectedIndex === currentQuestion.ans) {
-            document.getElementById('success-screen').style.display = 'block';
+            showScreen('success-screen'); // 答對顯示成功畫面
         } else {
-            document.getElementById('fail-screen').style.display = 'block';
+            showScreen('fail-screen');    // 答錯顯示失敗畫面
         }
     }
-
-    window.onload = startGame;
 </script>
 
 </body>
-
 </html>
-
-
