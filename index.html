@@ -126,7 +126,7 @@
         <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 10px; margin-top: 15px;">
             👉 <b>請出示此畫面給工作人員</b><br>兌換桌上對應編號的小禮物！
         </div>
-        <button class="primary-btn" onclick="returnToHome()" style="background-color: #6c757d; margin-top: 20px;">🏠 兌換完畢 (回首頁)</button>
+
     </div>
 
     <div id="fail-screen" class="screen">
@@ -187,9 +187,7 @@
         showScreen('question-screen');
     }
 
-    function returnToHome() {
-        showScreen('home-screen');
-    }
+    
 
     function startGame() {
         let randomIndex = Math.floor(Math.random() * questions.length);
@@ -260,3 +258,4 @@
 
 </body>
 </html>
+
