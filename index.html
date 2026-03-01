@@ -26,6 +26,8 @@
             text-align: center;
             position: relative;
             overflow: hidden;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
         h1 { color: #0056b3; font-size: 26px; margin-bottom: 10px; }
@@ -124,9 +126,9 @@
         <div class="success-text">您的禮物代碼</div>
         <div id="prize-code" style="font-size: 80px; color: #d32f2f; font-weight: bold; margin: 10px 0;">?</div>
         <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 10px; margin-top: 15px;">
-            👉 <b>請出示此畫面給工作人員</b><br>兌換桌上對應編號的小禮物！
+            👉 <b>請出示此畫面給工作人員</b><br>兌換桌上對應編號的小禮物！<br>
+            <span style="font-size: 14px; color: #666;">(兌換完畢後請直接關閉此網頁)</span>
         </div>
-
     </div>
 
     <div id="fail-screen" class="screen">
@@ -140,8 +142,7 @@
 
 <script>
     // ==========================================
-    // 🔗 雲端抽獎系統連線設定
-    // 請將下方引號內的網址，替換成你的 Google Apps Script 部署網址
+    // 🔗 雲端抽獎系統連線設定 (已替換為專屬網址)
     // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbw5Bf5D0QpbV_iSaHaSj1V5ArEPF2TjnvU5mbCAMJQ0uHlyymo9DBPR_0bQBHAzIT7a/exec";
     
@@ -165,7 +166,7 @@
         { q: "檔案法所稱的「檔案」，<br>是指下列哪一種資料？", options: ["民眾私下的筆記", "機關收發、保存之資料", "報章雜誌"], ans: 1 },
         { q: "複製檔案以黑白複印時，<br>B4(含)尺寸以下每張幾元？", options: ["10元", "5元", "2元"], ans: 2 },
         { q: "「機關檔案目錄查詢網」的<br>英文名稱縮寫為何?", options: ["NASA", "NEAR", "GOOGLE"], ans: 1 },
-        { q: "閱覽、抄錄檔案，<br>其收費標準為何？", options: ["免費", "每 2 小時 20 每", "一次 100 元"], ans: 1 },
+        { q: "閱覽、抄錄檔案，<br>其收費標準為何？", options: ["免費", "每 2 小時 20 元", "一次 100 元"], ans: 1 },
         { q: "複製檔案以黑白複印時，<br>A3尺寸每張幾元？", options: ["10元", "5元", "3元"], ans: 2 },
         { q: "檔案應用之方式，<br>不包括下列何者？", options: ["閱覽檔案", "抄錄檔案", "把檔案原件借回家"], ans: 2 },
         { q: "利用機關檔案目錄查詢網「NEAR」主要是查詢什麼資訊？", options: ["檔案的內容", "檔案目錄", "檔案承辦人的姓名"], ans: 1 },
@@ -177,6 +178,26 @@
 
     let currentQuestion = {};
 
+    // ==========================================
+    // 🧠 題庫記憶功能 (確保單一裝置不重複抽題)
+    // ==========================================
+    function getAvailableQuestions() {
+        let pool = localStorage.getItem('wufengQuestionPool');
+        if (pool) {
+            pool = JSON.parse(pool);
+            if (pool.length === 0) {
+                pool = Array.from({length: questions.length}, (_, i) => i);
+            }
+        } else {
+            pool = Array.from({length: questions.length}, (_, i) => i);
+        }
+        return pool;
+    }
+
+    function saveAvailableQuestions(pool) {
+        localStorage.setItem('wufengQuestionPool', JSON.stringify(pool));
+    }
+
     function goToGame() {
         startGame();
         showScreen('question-screen');
@@ -187,11 +208,19 @@
         showScreen('question-screen');
     }
 
-    
-
     function startGame() {
-        let randomIndex = Math.floor(Math.random() * questions.length);
-        currentQuestion = questions[randomIndex];
+        // 取得目前剩下的題庫池
+        let pool = getAvailableQuestions();
+        
+        // 從剩下的題目中隨機挑選
+        let randomPoolIndex = Math.floor(Math.random() * pool.length);
+        let questionIndex = pool[randomPoolIndex]; 
+        
+        // 剔除已被抽中的題目並存檔
+        pool.splice(randomPoolIndex, 1);
+        saveAvailableQuestions(pool);
+
+        currentQuestion = questions[questionIndex];
 
         document.getElementById('question-text').innerHTML = currentQuestion.q;
         
@@ -215,7 +244,9 @@
         }
     }
 
-    // ☁️ 雲端抽獎邏輯
+    // ==========================================
+    // ☁️ 雲端抽獎邏輯 (串接 Google Sheets)
+    // ==========================================
     function drawPrize() {
         let btn = document.getElementById('draw-btn');
         
@@ -239,9 +270,9 @@
                     showScreen('prize-screen');
                 } else if (data.status === "empty") {
                     // 籤筒已空
-                    alert("哎呀！所有獎品已經全部被抽完囉！請洽詢工作人員。");
+                    alert("哎呀！所有獎品已經全部被抽完囉！請洽詢現場人員。");
                 } else {
-                    // 發生錯誤 (例如鎖定衝突)
+                    // 發生錯誤
                     alert("系統訊息：" + data.message);
                 }
             })
@@ -258,4 +289,3 @@
 
 </body>
 </html>
-
