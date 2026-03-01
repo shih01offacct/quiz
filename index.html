@@ -26,9 +26,6 @@
             text-align: center;
             position: relative;
             overflow: hidden;
-            /* 讓內容多時可捲動 */
-            max-height: 90vh;
-            overflow-y: auto;
         }
         
         h1 { color: #0056b3; font-size: 26px; margin-bottom: 10px; }
@@ -50,6 +47,12 @@
             transition: transform 0.2s, background-color 0.2s;
         }
         .primary-btn:active { transform: scale(0.95); background-color: #004494; }
+
+        /* 載入中狀態的按鈕樣式 */
+        .loading-btn {
+            background-color: #ccc !important;
+            cursor: not-allowed;
+        }
 
         .option-btn {
             display: block;
@@ -89,50 +92,12 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        /* 管理按鈕樣式 (放在右上角) */
-        #admin-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: none;
-            color: #999;
-            cursor: pointer;
-            font-size: 14px;
-            z-index: 10;
-        }
-
-        /* 管理後台專用樣式 */
-        .admin-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            font-size: 18px;
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
-        .admin-input {
-            width: 60px;
-            font-size: 18px;
-            padding: 5px;
-            text-align: center;
-            border: 1px solid #0056b3;
-            border-radius: 5px;
-            font-weight: bold;
-            color: #d32f2f;
-        }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     
-    <button id="admin-btn" onclick="adminPanel()">⚙️ 管理</button>
-
     <div id="home-screen" class="screen active">
         <h1>📂 霧峰區公所<br>檔案應用有獎徵答</h1>
         <div style="font-size: 60px; margin: 20px 0;">🏫</div>
@@ -151,7 +116,7 @@
         <div style="font-size: 60px; margin-bottom: 10px;">🎉</div>
         <div class="success-text">恭喜答對！</div>
         <p style="font-size: 18px; font-weight: bold;">太厲害了！完全了解規定。</p>
-        <button class="primary-btn" onclick="drawPrize()" style="background-color: #ff9800;">🎁 點擊抽獎</button>
+        <button id="draw-btn" class="primary-btn" onclick="drawPrize()" style="background-color: #ff9800;">🎁 點擊抽獎</button>
     </div>
 
     <div id="prize-screen" class="screen">
@@ -171,119 +136,21 @@
         <button class="primary-btn" onclick="retryGame()">↻ 再抽一題</button>
     </div>
 
-    <div id="admin-screen" class="screen">
-        <h2>⚙️ 庫存管理後台</h2>
-        <p style="font-size: 14px; color: #666; margin-bottom: 15px;">您可以在此直接修改目前剩餘數量，<br>或將所有數量重置回初始值。</p>
-        
-        <div id="admin-inventory-list" style="text-align: left; margin-bottom: 20px;"></div>
-        
-        <button class="primary-btn" onclick="saveAdminChanges()" style="background-color: #28a745;">💾 儲存修改</button>
-        <button class="primary-btn" onclick="resetToInitial()" style="background-color: #dc3545;">🔄 一鍵重置為初始</button>
-        <button class="primary-btn" onclick="returnToHome()" style="background-color: #6c757d;">🚪 返回活動首頁</button>
-    </div>
-
 </div>
 
 <script>
     // ==========================================
-    // 🎁 初始抽獎設定區 (供重置使用)
+    // 🔗 雲端抽獎系統連線設定
+    // 請將下方引號內的網址，替換成你的 Google Apps Script 部署網址
     // ==========================================
-    const initialPrizes = {
-        1: 10,  
-        2: 10,  
-        3: 10,  
-        4: 10,   
-        5: 10,
-        6: 10,
-        7: 10,
-        8: 10
-    };
-    // ==========================================
-
-    let currentPrizes;
-
-    // 讀取目前的庫存狀態
-    function loadInventory() {
-        const saved = localStorage.getItem('wufengPrizeInventory');
-        if (saved) {
-            currentPrizes = JSON.parse(saved);
-        } else {
-            currentPrizes = Object.assign({}, initialPrizes);
-            saveInventory();
-        }
-    }
-
-    // 儲存庫存狀態
-    function saveInventory() {
-        localStorage.setItem('wufengPrizeInventory', JSON.stringify(currentPrizes));
-    }
-
-    // 網頁載入時先讀取庫存
-    loadInventory();
-
+    const API_URL = "https://script.google.com/macros/s/AKfycbw5Bf5D0QpbV_iSaHaSj1V5ArEPF2TjnvU5mbCAMJQ0uHlyymo9DBPR_0bQBHAzIT7a/exec";
+    
     // 頁面切換邏輯
     function showScreen(screenId) {
         document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
     }
 
-    // ==========================================
-    // ⚙️ 管理後台相關功能
-    // ==========================================
-    function adminPanel() {
-        let password = prompt("請輸入管理員密碼：");
-        // 預設密碼為 2143
-        if (password === "2143") {
-            renderAdminList();
-            showScreen('admin-screen');
-        } else if (password !== null) {
-            alert("❌ 密碼錯誤！");
-        }
-    }
-
-    // 產生後台的輸入框列表
-    function renderAdminList() {
-        const container = document.getElementById('admin-inventory-list');
-        container.innerHTML = ''; // 清空內容
-        
-        for (let code in currentPrizes) {
-            let div = document.createElement('div');
-            div.className = 'admin-item';
-            div.innerHTML = `
-                <span>🎁 代碼 <b>${code}</b></span>
-                <span>
-                    剩餘 <input type="number" id="admin-input-${code}" class="admin-input" value="${currentPrizes[code]}" min="0"> 個
-                </span>
-            `;
-            container.appendChild(div);
-        }
-    }
-
-    // 儲存管理員手動修改的數量
-    function saveAdminChanges() {
-        for (let code in currentPrizes) {
-            let inputVal = document.getElementById(`admin-input-${code}`).value;
-            // 確保輸入的是數字，如果是空白或奇怪的字元就預設為 0
-            currentPrizes[code] = parseInt(inputVal) || 0; 
-        }
-        saveInventory();
-        alert("✅ 庫存修改已成功儲存！");
-    }
-
-    // 將庫存重置為初始值
-    function resetToInitial() {
-        if (confirm("⚠️ 確定要將所有獎品數量「重置」回一開始的設定嗎？\n\n(此動作會覆蓋掉目前的庫存量)")) {
-            currentPrizes = Object.assign({}, initialPrizes);
-            saveInventory();
-            renderAdminList(); // 重新整理畫面上的數字
-            alert("✅ 獎品庫存已完全重置！");
-        }
-    }
-
-    // ==========================================
-    // 🎮 遊戲與抽獎主要邏輯
-    // ==========================================
-    
     // 題庫資料
     const questions = [
         { q: "想向機關申請閱覽檔案，<br>該怎麼做？", options: ["偷偷溜進去看", "填寫檔案應用申請書向機關申請", "打電話向機關申請"], ans: 1 },
@@ -298,7 +165,7 @@
         { q: "檔案法所稱的「檔案」，<br>是指下列哪一種資料？", options: ["民眾私下的筆記", "機關收發、保存之資料", "報章雜誌"], ans: 1 },
         { q: "複製檔案以黑白複印時，<br>B4(含)尺寸以下每張幾元？", options: ["10元", "5元", "2元"], ans: 2 },
         { q: "「機關檔案目錄查詢網」的<br>英文名稱縮寫為何?", options: ["NASA", "NEAR", "GOOGLE"], ans: 1 },
-        { q: "閱覽、抄錄檔案，<br>其收費標準為何？", options: ["免費", "每 2 小時 20 元", "一次 100 元"], ans: 1 },
+        { q: "閱覽、抄錄檔案，<br>其收費標準為何？", options: ["免費", "每 2 小時 20 每", "一次 100 元"], ans: 1 },
         { q: "複製檔案以黑白複印時，<br>A3尺寸每張幾元？", options: ["10元", "5元", "3元"], ans: 2 },
         { q: "檔案應用之方式，<br>不包括下列何者？", options: ["閱覽檔案", "抄錄檔案", "把檔案原件借回家"], ans: 2 },
         { q: "利用機關檔案目錄查詢網「NEAR」主要是查詢什麼資訊？", options: ["檔案的內容", "檔案目錄", "檔案承辦人的姓名"], ans: 1 },
@@ -350,38 +217,46 @@
         }
     }
 
-    // 抽獎邏輯
+    // ☁️ 雲端抽獎邏輯
     function drawPrize() {
-        let pool = [];
+        let btn = document.getElementById('draw-btn');
         
-        // 根據目前庫存建立籤筒
-        for (let code in currentPrizes) {
-            for (let i = 0; i < currentPrizes[code]; i++) {
-                pool.push(code);
-            }
-        }
+        // 為了防止民眾連續點擊，先把按鈕變成「載入中」狀態
+        btn.innerText = "⏳ 連線抽獎中...";
+        btn.classList.add('loading-btn');
+        btn.disabled = true;
 
-        // 如果籤筒空了
-        if (pool.length === 0) {
-            alert("哎呀！所有獎品已經全部發完囉！請洽詢工作人員。");
-            return;
-        }
+        // 向 Google 試算表發送請求
+        fetch(API_URL)
+            .then(response => response.json())
+            .then(data => {
+                // 收到結果，恢復按鈕狀態
+                btn.innerText = "🎁 點擊抽獎";
+                btn.classList.remove('loading-btn');
+                btn.disabled = false;
 
-        // 隨機抽出一張籤
-        let randomIndex = Math.floor(Math.random() * pool.length);
-        let winningCode = pool[randomIndex];
-
-        // 扣除該代碼的庫存並儲存
-        currentPrizes[winningCode]--;
-        saveInventory();
-
-        // 顯示抽獎結果
-        document.getElementById('prize-code').innerText = winningCode;
-        showScreen('prize-screen');
+                if (data.status === "success") {
+                    // 抽獎成功，顯示代碼
+                    document.getElementById('prize-code').innerText = data.code;
+                    showScreen('prize-screen');
+                } else if (data.status === "empty") {
+                    // 籤筒已空
+                    alert("哎呀！所有獎品已經全部被抽完囉！請洽詢工作人員。");
+                } else {
+                    // 發生錯誤 (例如鎖定衝突)
+                    alert("系統訊息：" + data.message);
+                }
+            })
+            .catch(error => {
+                // 網路斷線或其他錯誤
+                btn.innerText = "🎁 點擊抽獎";
+                btn.classList.remove('loading-btn');
+                btn.disabled = false;
+                alert("網路連線異常，請確認手機網路狀態後再試一次！");
+                console.error('Error:', error);
+            });
     }
 </script>
 
 </body>
 </html>
-
-
